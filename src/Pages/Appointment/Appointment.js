@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Footer from '../Shared/Footer';
+import Footer from '../../Components/Shared/Footer';
 import AppointmentBanner from './AppointmentBanner';
 import AvailableAppointments from './AvailableAppointments';
 

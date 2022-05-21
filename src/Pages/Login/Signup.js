@@ -1,48 +1,72 @@
 import React, { useEffect } from 'react';
-import { useSignInWithEmailAndPassword, useSignInWithGoogle } from 'react-firebase-hooks/auth';
-import { useForm } from "react-hook-form";
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useCreateUserWithEmailAndPassword, useSignInWithGoogle, useUpdateProfile } from 'react-firebase-hooks/auth';
 import Loader from '../../Components/Loader';
 import auth from '../../firebase.init';
+import { useForm } from "react-hook-form";
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useToken from '../../Hooks/UseToken';
 
-const Login = () => {
+const Signup = () => {
     const navigate = useNavigate()
     const location = useLocation();
-
     const [signInWithGoogle, googleUser, googleLoading, googleError] = useSignInWithGoogle(auth);
     const [
-        signInWithEmailAndPassword,
+        createUserWithEmailAndPassword,
         user,
         loading,
         error,
-    ] = useSignInWithEmailAndPassword(auth);
+      ] = useCreateUserWithEmailAndPassword(auth, {sendEmailVerification: true});
+      const [updateProfile, updating, updateError] = useUpdateProfile(auth);
 
     const { register, formState: { errors }, handleSubmit } = useForm();
-    const onSubmit = async (data) => {
-        signInWithEmailAndPassword(data.email, data.password)
+    const onSubmit = async(data) => {
+        await createUserWithEmailAndPassword(data.email, data.password);
+        await updateProfile({displayName: data.name})
     };
+
     const [token] = useToken(user || googleUser)
+
     let showErrorMessage;
-    let from = location.state?.from?.pathname || "/";
-    if (error || googleError) {
-        showErrorMessage = <small className='text-red-500'>{error.message || googleError.message}</small>
+    if (error || googleError || updateError) {
+        return (
+            showErrorMessage = <small className='text-red-500'>{error.message || googleError.message || updateError.message}</small>
+        );
     }
-    if (loading || googleLoading) {
+    if (loading || googleLoading || updating) {
         return <Loader></Loader>;
     }
-    
+    let from = location.state?.from?.pathname || "/";
+
     if (token) {
         navigate(from, { replace: true });
     }
+
     return (
         <div className='flex justify-center items-center h-screen'>
             <div class="card w-96 bg-base-100 shadow-xl">
                 <div class="card-body">
-                    <h2 className="text-4xl text-seconday text-center">Login</h2>
+                    <h2 className="text-4xl text-seconday text-center">Sign Up</h2>
                     <div class="form-control w-full max-w-xs">
 
                         <form onSubmit={handleSubmit(onSubmit)}>
+                            <label class="label">
+                                <span class="label-text">What is your name?</span>
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="Type here"
+                                class="input input-sm input-bordered w-full max-w-xs focus:outline-0"
+                                {...register('name', {
+                                    required: {
+                                        value: true,
+                                        message: 'Name is required'
+                                    }
+                                })}
+                            />
+                            <label class="label">
+                                {errors.name?.type === 'required' && <span className="label-text-alt text-red-500">{errors.name.message}</span>}
+                            </label>
+                            {/* name field end and email field start */}
                             <label class="label">
                                 <span class="label-text">What is your Email?</span>
                             </label>
@@ -62,8 +86,8 @@ const Login = () => {
                                 })}
                             />
                             <label class="label">
-                                {errors.email?.type === 'required' && <span className="label-text-alt text-red-500">{errors.email.message}</span>}
-                                {errors.email?.type === 'pattern' && <span className="label-text-alt text-red-500">{errors.email.message}</span>}
+                            {errors.email?.type === 'required' && <span className="label-text-alt text-red-500">{errors.email.message}</span> }
+                            {errors.email?.type === 'pattern' && <span className="label-text-alt text-red-500">{errors.email.message}</span> }
                             </label>
                             {/* email field end and password field start */}
                             <label class="label">
@@ -85,15 +109,14 @@ const Login = () => {
                                 })}
                             />
                             <label class="label">
-                                {errors.password?.type === 'required' && <span className="label-text-alt text-red-500">{errors.password.message}</span>}
-                                {errors.password?.type === 'pattern' && <span className="label-text-alt text-red-500">{errors.password.message}</span>}
+                            {errors.password?.type === 'required' && <span className="label-text-alt text-red-500">{errors.password.message}</span> }
+                            {errors.password?.type === 'pattern' && <span className="label-text-alt text-red-500">{errors.password.message}</span> }
                             </label>
                             {showErrorMessage}
-                            <input className='btn btn-sm w-full bg-secondary text-white border-0' type="submit" value="Login" />
+                            <input className='btn btn-sm w-full bg-secondary text-white border-0' type="submit" value="Sign Up" />
                         </form>
                     </div>
-                    <p>Forget password? <Link to='/resetpass'><span className='text-secondary'>Reset Password</span></Link></p>
-                    <p>Don't have an account? <Link to='/signup'><span className='text-secondary'>Create an account</span></Link></p>
+                    <p>Already have account? <Link to='/login'><span className='text-secondary'>Login</span></Link></p>
                     <div class="divider">OR</div>
                     <button onClick={() => signInWithGoogle()} className='btn btn-sm btn-outline hover:bg-secondary'> <img className='w-4 mr-2' src="https://i.ibb.co/9tw7sWw/google.png" alt="" /> Continue With Google</button>
                 </div>
@@ -102,4 +125,4 @@ const Login = () => {
     );
 };
 
-export default Login;
+export default Signup;
